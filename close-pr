@@ -1,0 +1,30 @@
+#!/bin/sh
+
+#
+# Script arguments
+#
+TOKEN=$1
+REPO=$2
+FROM_BRANCH=$3
+TO_BRANCH=$4
+
+#
+# Init static vars
+#
+GITEA_URL=https://gitea.kubernetes.lan.basmaas.nl
+
+echo "> Logging in..."
+tea login add --token ${TOKEN} --url ${GITEA_URL}
+
+echo "> Finding pull requests for ${FROM_BRANCH} -> ${TO_BRANCH}..."
+PR=$(tea pr list -lm 1000 -o simple --repo ${REPO} | grep "${FROM_BRANCH} -> ${TO_BRANCH}")
+echo $PR
+PR_EXISTS=$?
+
+if [ ${PR_EXISTS} -eq 1 ]; then
+    echo "> No Pull request exists for merging ${FROM_BRANCH} into ${TO_BRANCH}"
+else
+    PR_INDEX=$(echo "${PR}" | cut -d ' ' -f 1)
+    echo "> Closing pull request with index ${PR_INDEX}..."
+    tea pr close ${PR_INDEX}
+fi

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+#
+# Script arguments
+#
+REPO=$1
+BUILD_ID=$2
+
+function get_status {
+  drone build info ${REPO} ${BUILD_ID} --format "{{ .Status }}"
+}
+
+function print_status {
+    echo "Build ${BUILD_ID} for repo ${REPO} has status: ${STATUS}"
+}
+
+STATUS=$(get_status)
+print_status
+while [[ ${STATUS} == "pending" ]] || [[ ${STATUS} == "running" ]]
+do
+    sleep 5
+    STATUS=$(get_status)
+    print_status
+done
+
+if [[ ${STATUS} == "success" ]]
+then
+    exit 0
+else
+    exit 1
+fi

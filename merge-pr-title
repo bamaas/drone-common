@@ -1,0 +1,29 @@
+#!/bin/sh
+
+#
+# Script arguments
+#
+TOKEN=$1
+REPO=$2
+PR_TITLE=$3
+
+#
+# Init static vars
+#
+GITEA_URL=https://gitea.kubernetes.lan.basmaas.nl
+
+echo "> Logging in..."
+tea login add --token ${TOKEN} --url ${GITEA_URL}
+
+echo "> Finding pull request index"
+PR=$(tea pr list -lm 1000 -o simple --repo ${REPO} | grep "${PR_TITLE}")
+echo $PR
+PR_EXISTS=$?
+
+if [ ${PR_EXISTS} -eq 1 ]; then
+    echo "> No Pull request exists with title ${PR_TITLE}"
+else
+    PR_INDEX=$(echo "${PR}" | cut -d ' ' -f 1)
+    echo "> Merging pull request with index ${PR_INDEX}..."
+    tea pr merge --repo ${REPO} --style rebase ${PR_INDEX}
+fi

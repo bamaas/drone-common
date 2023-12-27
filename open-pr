@@ -1,0 +1,37 @@
+#!/bin/sh
+
+#
+# Script arguments
+#
+TOKEN=$1
+REPO=$2
+FROM_BRANCH=$3
+TO_BRANCH=$4
+TITLE=${5:-"${FROM_BRANCH} -> ${TO_BRANCH} | ${GIT_COMMIT_MSG_CHAR_LIMIT}"}
+DESCRIPTION=${6:-${GIT_COMMIT_MSG}}
+
+#
+# Init static vars
+#
+GITEA_URL=https://gitea.kubernetes.lan.basmaas.nl
+
+#
+# Init dynamic vars
+#
+GIT_COMMIT_SHA=$(git rev-parse --short HEAD)
+GIT_COMMIT_MSG=$(git show -s --format=%B ${GIT_COMMIT_SHA} | head -n 1)
+GIT_COMMIT_MSG_CHAR_LIMIT=$(echo ${GIT_COMMIT_MSG:0:100})
+
+echo "> Logging in..."
+tea login add --token ${TOKEN} --url ${GITEA_URL}
+
+echo "> Listing pull requests for ${FROM_BRANCH} -> ${TO_BRANCH}..."
+tea pr list -lm 1000 --repo ${REPO} -o simple | grep "${FROM_BRANCH} -> ${TO_BRANCH}"
+PR_EXISTS=$?
+
+if [ ${PR_EXISTS} -eq 0 ]; then
+    echo "> Pull request already exists for merging ${FROM_BRANCH} into ${TO_BRANCH}"
+else
+    echo "> Creating pull request..."
+    tea pr create --repo ${REPO} --head ${FROM_BRANCH} --base ${TO_BRANCH} --title "${TITLE}" --description "${DESCRIPTION}"
+fi

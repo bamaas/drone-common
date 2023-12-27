@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#
+# Script arguments
+#
+APP=$1
+ARGO_USERNAME=$2
+ARGO_PASSWORD=$3
+
+#
+# Init static vars
+#
+ARGOCD_URL=argocd.kubernetes.lan.basmaas.nl
+
+set -e
+echo "> Logging in..."
+argocd login ${ARGOCD_URL} --username ${ARGO_USERNAME} --password ${ARGO_PASSWORD} --grpc-web
+
+set +e
+echo "> Terminating app ${APP}..."
+argocd app terminate-op ${APP} --grpc-web
+set -e
+
+echo "> Waiting until app ${APP} is ready to be synced..."
+argocd app wait ${APP} --operation --grpc-web
+
+echo ">Syncing app ${APP}..."
+argocd app sync ${APP} --retry-limit 1 --timeout 300 --grpc-web
